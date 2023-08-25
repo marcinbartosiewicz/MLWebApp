@@ -15,6 +15,7 @@ def modelling(type, chosen_target, df):
     compare_df = type.pull()
     st.dataframe(compare_df)
     pr.save_model(best_model, 'best_model')
+    st.session_state['best_model']=True
 
 
 if 'dataset' in st.session_state:
@@ -31,12 +32,12 @@ if choice == "Upload":
     st.title("Upload Your Dataset")
 
     file = st.file_uploader("Upload Your Dataset in CSV format", type='csv')
-    if extrabutton("Click If you don't have your own dataset. You can use one of two example datasets.", key="upload1"):
+    if extrabutton("Click If you don't have your dataset. You can use one of two example datasets.", key="upload1"):
 
         chosen_dataset = st.selectbox('Choose the Dataset',
                                       ['Titanic(Classification)', 'DiamondPricePrediction(Regression)'])
-        if extrabutton("If you choose then click", key="upload2"):
-            st.write("You chose:", chosen_dataset)
+        if extrabutton("If you choose, then click", key="upload2"):
+            st.write("You choose:", chosen_dataset)
             if chosen_dataset == 'Titanic(Classification)':
                 file = 'titanic.csv'
             else:
@@ -63,7 +64,7 @@ if choice == "Modelling":
         chosen_target = st.selectbox('Choose the Target Column', df.columns)
         typeofproblem = st.selectbox('Is your task Classification or Regression?', ['Classification', 'Regression'])
         st.session_state['typeofproblem'] = typeofproblem
-        if extrabutton("Click if choose type of problem", key="typeofproblem2"):
+        if extrabutton("Click if you have selected the type of task", key="typeofproblem2"):
 
             if df[chosen_target].isnull().sum() > 0:
 
@@ -85,9 +86,11 @@ if choice == "Modelling":
 
             if not df[chosen_target].isnull().any():
                 st.write("Your Target does not have null values")
-                if st.button('Run Modelling'):
+                if extrabutton('Run Modelling',key='runmodelling'):
 
                     with st.spinner('Running Modelling...'):
+
+                        st.warning('This may take up to several minutes',icon='⏳')
                         try:
                             if typeofproblem == 'Regression':
                                 modelling(type=pr, chosen_target=chosen_target, df=df)
@@ -98,13 +101,17 @@ if choice == "Modelling":
                             st.error("Something went wrong")
 
                     st.success('Modelling completed!')
+                    st.write('You can download the best model for your dataset from the Download section')
     except NameError:
         st.error('You need to upload file first', icon="🚨")
 
 if choice == "Download":
     st.title("Download")
-    try:
-        with open('best_model.pkl', 'rb') as f:
-            st.download_button('Download Model', f, file_name="best_model.pkl")
-    except FileNotFoundError:
-        st.error('You need to upload file first', icon="🚨")
+    if 'best_model' in st.session_state:
+        try:
+            with open('best_model.pkl', 'rb') as f:
+                st.download_button('Download Model', f, file_name="best_model.pkl")
+        except FileNotFoundError:
+            st.error('Something went wrong', icon="🚨")
+    else:
+        st.error('First you need to do modeling', icon="🚨")
